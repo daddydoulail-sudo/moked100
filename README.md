@@ -6,7 +6,8 @@
 
 ## הורדה והתקנה
 כל דחיפה ל-`main` בונה קובץ התקנה ב-GitHub Actions (Actions > Build Windows installer > Artifacts).
-תיוג `vX.Y.Z` יוצר Release עם קובץ `Moked100_X.Y.Z_x64-setup.exe` ו-`.msi`.
+תיוג `vX.Y.Z` יוצר Release עם קובץ `Moked100_X.Y.Z_x64-setup.exe`.
+ההתקנה לא דורשת הרשאות מנהל ולא דורשת התקנות מקדימות: מריצים את ה-exe ובוחרים תיקייה. אם במחשב חסר רכיב WebView2 (נדיר, קיים בכל Windows 10/11 מעודכן), המתקין מתקין אותו לבד.
 
 ## מבנה
 ```
