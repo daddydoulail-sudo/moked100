@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>מוקד 100 - מערכת שליטה ובקרה</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ===== login / shift start ===== -->
+  <section id="screen-login" class="screen">
+    <div class="login-box">
+      <div class="login-badge">
+        <div class="badge-star">★</div>
+        <div class="badge-title">משטרת ישראל</div>
+        <div class="badge-sub">מוקד 100 · מערכת שליטה ובקרה</div>
+      </div>
+      <p class="login-instruction">בחר תעודת שוטר כדי להתחיל משמרת</p>
+      <div id="avatar-list" class="avatar-list"></div>
+      <div id="login-stats" class="login-stats"></div>
+      <button id="btn-start" class="btn btn-primary btn-big" disabled>התחל משמרת</button>
+      <div class="login-footer" dir="ltr">MOKED-100 · v1.0 · TERMINAL 04</div>
+    </div>
+  </section>
+
+  <!-- ===== main dispatch console ===== -->
+  <section id="screen-main" class="screen" hidden>
+    <header class="topbar">
+      <div class="topbar-brand">
+        <span class="brand-star">★</span>
+        <div>
+          <div class="brand-title">משטרת ישראל · מוקד 100</div>
+          <div class="brand-sub">תחנת מרכז · עמדת מוקדן 04</div>
+        </div>
+      </div>
+      <div class="topbar-officer">
+        <span id="officer-avatar" class="officer-avatar"></span>
+        <div>
+          <div id="officer-rank" class="officer-rank"></div>
+          <div class="officer-points"><span id="officer-points">0</span> נק׳ · <span id="officer-stars">0</span> ★</div>
+        </div>
+      </div>
+      <div class="topbar-clock">
+        <div id="clock" class="clock" dir="ltr">00:00:00</div>
+        <div id="shift-status" class="shift-status">משמרת פעילה</div>
+      </div>
+    </header>
+
+    <main class="console">
+      <!-- event log (start side) -->
+      <aside class="panel panel-log">
+        <div class="panel-title">יומן אירועים</div>
+        <ul id="event-log" class="event-log"></ul>
+        <div class="panel-title">כוחות</div>
+        <ul id="unit-status" class="unit-status"></ul>
+      </aside>
+
+      <!-- map -->
+      <div class="panel panel-map">
+        <div class="panel-title">מפה מבצעית <span id="map-hint" class="map-hint"></span></div>
+        <div class="map-wrap">
+          <svg id="map" viewBox="0 0 960 560" preserveAspectRatio="xMidYMid meet" aria-label="מפת העיר"></svg>
+        </div>
+      </div>
+
+      <!-- incident panel (end side) -->
+      <aside class="panel panel-incident">
+        <div class="panel-title">
+          <span>טיפול באירוע</span>
+          <span id="incident-id" class="incident-id" dir="ltr"></span>
+        </div>
+
+        <div id="step-idle" class="step">
+          <div class="idle-box">
+            <div class="idle-icon">📡</div>
+            <div>ממתין לקריאה...</div>
+          </div>
+        </div>
+
+        <div id="step-ring" class="step" hidden>
+          <div class="ring-box">
+            <div class="ring-phone">📞</div>
+            <div class="ring-title">קריאה נכנסת</div>
+            <div class="ring-sub">מוקד 100 · קו 3</div>
+            <button id="btn-answer" class="btn btn-danger btn-big">ענה לשיחה</button>
+          </div>
+        </div>
+
+        <div id="step-call" class="step" hidden>
+          <div class="caller-card">
+            <div id="caller-icon" class="caller-icon"></div>
+            <div>
+              <div id="caller-name" class="caller-name"></div>
+              <div class="caller-line">קו פתוח · מוקלט</div>
+            </div>
+          </div>
+          <div id="caller-text" class="caller-text"></div>
+          <div class="priority-row">
+            <span>דחיפות:</span>
+            <span id="priority-badge" class="priority-badge"></span>
+          </div>
+          <button id="btn-watch" class="btn btn-primary btn-big">פתח מצלמת אבטחה</button>
+        </div>
+
+        <div id="step-video" class="step" hidden>
+          <div class="monitor">
+            <div class="monitor-bar"><span id="cam-label" dir="ltr">CAM</span><span class="live-dot">LIVE</span></div>
+            <video id="cctv" playsinline preload="auto"></video>
+          </div>
+          <div id="video-title" class="video-title"></div>
+          <button id="btn-after-video" class="btn btn-primary btn-big">סמן מיקום במפה</button>
+        </div>
+
+        <div id="step-place" class="step" hidden>
+          <div class="instruction">
+            <div class="instruction-icon">📍</div>
+            <div>לחץ על מקום האירוע במפה</div>
+          </div>
+          <div id="place-feedback" class="feedback"></div>
+        </div>
+
+        <div id="step-unit" class="step" hidden>
+          <div class="instruction">
+            <div class="instruction-icon">🚨</div>
+            <div>איזה כוח לשלוח לאירוע?</div>
+          </div>
+          <div id="unit-list" class="unit-list"></div>
+          <div id="unit-feedback" class="feedback"></div>
+        </div>
+
+        <div id="step-dispatch" class="step" hidden>
+          <div class="dispatch-box">
+            <div class="dispatch-anim">🚨</div>
+            <div id="dispatch-text">הכוח בדרך לאירוע...</div>
+            <div class="progress"><div id="dispatch-progress" class="progress-bar"></div></div>
+          </div>
+        </div>
+
+        <div id="step-report" class="step" hidden>
+          <div class="report-head">
+            <span>דוח אירוע</span>
+            <span id="report-progress" class="report-progress"></span>
+          </div>
+          <div id="report-question" class="report-question"></div>
+          <div id="report-options" class="report-options"></div>
+        </div>
+
+        <div id="step-done" class="step" hidden>
+          <div class="done-box">
+            <div class="done-icon">✅</div>
+            <div id="done-text" class="done-text"></div>
+            <button id="btn-commander" class="btn btn-primary btn-big">שלח דוח למפקד</button>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="statusbar">
+      <span>אירועים שטופלו: <b id="stat-calls">0</b></span>
+      <span>כוכבים: <b id="stat-stars">0</b></span>
+      <span>דרגה: <b id="stat-rank"></b></span>
+      <span class="statusbar-end">
+        <button id="btn-mute" class="btn btn-ghost btn-small" title="השתק">🔊</button>
+        <button id="btn-logout" class="btn btn-ghost btn-small">סיום משמרת</button>
+      </span>
+    </footer>
+  </section>
+
+  <!-- ===== commander review modal ===== -->
+  <div id="modal-commander" class="modal" hidden>
+    <div class="modal-card">
+      <div class="commander-head">
+        <div class="commander-avatar">🎖️</div>
+        <div>
+          <div class="commander-title">מפקד התחנה</div>
+          <div class="commander-sub">אישור דוח אירוע</div>
+        </div>
+      </div>
+      <div id="commander-stars" class="stars"></div>
+      <div id="commander-text" class="commander-text"></div>
+      <table class="score-table">
+        <tbody id="score-rows"></tbody>
+        <tfoot><tr><td>סה"כ</td><td id="score-total" dir="ltr"></td></tr></tfoot>
+      </table>
+      <div id="rankup" class="rankup" hidden></div>
+      <button id="btn-next" class="btn btn-primary btn-big">חזרה למוקד</button>
+    </div>
+  </div>
+
+  <div id="subtitle" class="subtitle" hidden></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
