@@ -72,17 +72,29 @@ function showSubtitle(text) {
 /** Uses the feminine recording of a line when the chosen officer is a woman. */
 function lineId(id) { return gender() === "f" && LINES[id + "_f"] ? id + "_f" : id; }
 
-/** Speaks one narration line; resolves when it ends (or right away when muted). */
+/** Speaks one narration line; resolves when it ends (or right away when muted).
+ *  A guard timer resolves anyway if the file stalls, so a bad audio file can never freeze the game. */
 function say(id) {
   id = lineId(id);
   const token = ++voiceToken;
   showSubtitle(LINES[id] || "");
   return new Promise((resolve) => {
     if (muted) { setTimeout(() => { if (token === voiceToken) showSubtitle(""); resolve(); }, 900); return; }
+    let guard = setTimeout(() => done(), 20000);
+    const done = () => {
+      clearTimeout(guard);
+      if (token !== voiceToken) return;   // a newer line took over: this one is void
+      showSubtitle("");
+      resolve();
+    };
     voice.src = `assets/audio/${id}.mp3`;
-    const done = () => { if (token === voiceToken) showSubtitle(""); resolve(); };
     voice.onended = done;
     voice.onerror = done;
+    voice.onloadedmetadata = () => {
+      if (token !== voiceToken || !isFinite(voice.duration)) return;
+      clearTimeout(guard);
+      guard = setTimeout(done, voice.duration * 1000 + 2500);
+    };
     voice.play().catch(done);
   });
 }

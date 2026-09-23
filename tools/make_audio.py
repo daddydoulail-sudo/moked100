@@ -6,6 +6,10 @@ sound effects (synthesised with numpy) for the game.
     python3 tools/make_audio.py tts       # only narration (new or changed lines)
     python3 tools/make_audio.py tts --force   # re-record every line
 
+Every recorded line is then tightened with ffmpeg: leading/trailing silence is
+cut and pauses inside the line are capped at PAUSE seconds, so the narration
+does not drag between words.
+
 The narration text is also written to src/data/lines.json so the UI shows the
 same sentence it speaks. A line whose text is a {"m": ..., "f": ...} pair is
 recorded twice: <id>.mp3 for a male officer and <id>_f.mp3 for a female one.
@@ -31,13 +35,18 @@ AVRI = "he-IL-AvriNeural"
 
 # (voice, rate, pitch) presets. Only two Hebrew voices exist, so callers,
 # field units and the commander are told apart by pace and pitch.
-DISPATCHER = (HILA, "-5%", "+0Hz")
-COMMANDER = (AVRI, "-8%", "-12Hz")
-FIELD = (AVRI, "+0%", "-4Hz")        # unit reporting back on the radio
-MAN = (AVRI, "+4%", "+2Hz")          # worried caller
-WOMAN = (HILA, "+6%", "+6Hz")        # worried caller
-GIRL = (HILA, "+4%", "+18Hz")        # child caller
-BOY = (AVRI, "+4%", "+16Hz")
+# Rates are brisk on purpose: the neural voices pause a lot on their own, and
+# tighten() below also shortens every pause longer than PAUSE seconds.
+DISPATCHER = (HILA, "+12%", "+0Hz")
+COMMANDER = (AVRI, "+4%", "-12Hz")
+FIELD = (AVRI, "+10%", "-4Hz")       # unit reporting back on the radio
+MAN = (AVRI, "+12%", "+2Hz")         # worried caller
+WOMAN = (HILA, "+12%", "+6Hz")       # worried caller
+GIRL = (HILA, "+10%", "+18Hz")       # child caller
+BOY = (AVRI, "+10%", "+16Hz")
+
+PAUSE = 0.25        # longest silence kept inside a line, in seconds
+LEAD, TAIL = 0.05, 0.12   # silence kept at the start / end of a line
 
 # id: (preset, text) where preset and text may each be a {"m":..., "f":...} pair
 LINES = {
@@ -281,6 +290,20 @@ def make_sfx():
     print("sfx done")
 
 
+def tighten(path):
+    """Trims leading/trailing silence and shortens every pause inside the line to PAUSE seconds.
+
+    Decodes to wav first: the mp3 muxer in older ffmpeg builds complains about timestamps
+    coming straight out of silenceremove."""
+    wav = path[:-4] + ".tmp.wav"
+    trim = (f"silenceremove=start_periods=1:start_silence={LEAD}:start_threshold=-45dB:"
+            f"stop_periods=-1:stop_silence={PAUSE}:stop_threshold=-45dB:detection=peak,"
+            f"areverse,silenceremove=start_periods=1:start_silence={TAIL}:start_threshold=-45dB:detection=peak,areverse")
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", path, "-af", trim, wav], check=True)
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", wav, "-codec:a", "libmp3lame", "-q:a", "4", path], check=True)
+    os.remove(wav)
+
+
 async def make_tts(force=False):
     import edge_tts
     proxy = os.environ.get("HTTPS_PROXY")
@@ -299,6 +322,7 @@ async def make_tts(force=False):
             try:
                 c = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch, proxy=proxy)
                 await c.save(out)
+                tighten(out)
                 break
             except Exception as e:  # noqa: BLE001
                 print("retry", key, e)

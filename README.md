@@ -48,6 +48,8 @@ tools/
 1. הוסיפו ערך ל-`CLIPS` ב-`tools/process_stock.py` (או הניחו קובץ משלכם ב-`tools/_work/<id>.mp4`) והריצו `python3 tools/process_stock.py <id>`.
 2. הוסיפו שורות `call_<id>`, `done_<id>` ו-`OPTIONS[<id>]` ב-`tools/make_audio.py` והריצו `python3 tools/make_audio.py tts`.
    הסקריפט מקליט רק שורות חדשות או שהטקסט שלהן השתנה (`--force` מקליט הכל מחדש).
+   כל שורה עוברת הידוק ב-ffmpeg: שקט בהתחלה ובסוף נחתך והפסקות בין משפטים מקוצרות ל-`PAUSE` שניות,
+   כדי שהקריינות לא תיגרר. קצב הדיבור נקבע ב-presets בראש הקובץ (`DISPATCHER`, `MAN`, `WOMAN`...).
    שורה שהטקסט שלה הוא `{"m": ..., "f": ...}` מוקלטת פעמיים, בלשון זכר ובלשון נקבה.
 3. הוסיפו את האירוע ל-`SCENES` ב-`src/js/content.js` (`night: true` אם הוא מתאים למשמרת לילה).
    אם המקום חדש, הוסיפו אותו ל-`PLACES` וגם שורת `place_<id>` ב-`make_audio.py`.
